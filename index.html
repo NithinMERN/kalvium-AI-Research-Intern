@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson Studio — AI Research Intern</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="Lesson Studio home"><span class="brand-mark">L</span><span>lesson<span class="brand-light">studio</span></span></a>
+        <div class="sidebar-label">WORKSPACE</div>
+        <nav class="side-nav" aria-label="Dashboard navigation">
+          <a class="nav-item active" href="#overview"><span class="nav-icon">⌂</span> Overview</a>
+          <a class="nav-item" href="#createPanel" id="createLessonNav"><span class="nav-icon">＋</span> Create a lesson</a>
+          <a class="nav-item" href="#researchPanel" id="researchNav"><span class="nav-icon">⌕</span> Research library</a>
+          <a class="nav-item" href="#workspace" id="qualityNav"><span class="nav-icon">✓</span> Quality review</a>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="workflow-card">
+            <div class="workflow-icon">✦</div>
+            <strong>Your workflow</strong>
+            <p>From learning goal to classroom-ready lesson.</p>
+            <div class="workflow-progress"><span></span></div>
+            <small>45-minute lesson format</small>
+          </div>
+          <div class="sidebar-user"><span class="avatar">I</span><span><strong>Instructor workspace</strong><small>Personal library</small></span><span class="user-menu">···</span></div>
+        </div>
+      </aside>
+
+      <div class="dashboard-main">
+        <header class="topbar">
+          <div class="breadcrumb">Workspace <span>/</span> <strong>Overview</strong></div>
+          <div class="topbar-right"><span class="saved-state" id="savedState"><span class="saved-dot"></span>Your work saves in this browser</span><span class="top-avatar">I</span></div>
+        </header>
+
+        <main id="overview">
+          <section class="dashboard-welcome">
+            <div>
+              <p class="eyebrow">AI RESEARCH INTERN <span class="eyebrow-divider">/</span> PROGRAM DESIGN</p>
+              <h1>Your lesson<br class="mobile-break"> workspace<span>.</span></h1>
+              <p class="welcome-copy">Turn a learning objective into a thoughtful, research-backed lesson.</p>
+            </div>
+            <img class="welcome-illustration" src="/dashboard-illustration.svg" alt="" aria-hidden="true">
+            <button class="button button-primary welcome-action" id="newLessonButton" type="button"><span>＋</span> Create new lesson</button>
+          </section>
+
+          <section class="stats-grid" aria-label="Lesson workflow overview">
+            <article class="stat-card stat-highlight"><div class="stat-icon">◷</div><div class="stat-copy"><span>LESSON LENGTH</span><strong>45 <small>minutes</small></strong><p>Designed for one complete session</p></div><div class="stat-decoration">45</div></article>
+            <article class="stat-card"><div class="stat-icon violet-icon">✦</div><div class="stat-copy"><span>QUALITY LAYERS</span><strong>02 <small>checks</small></strong><p>Research and instructional review</p></div><span class="stat-arrow">↗</span></article>
+            <article class="stat-card"><div class="stat-icon amber-icon">▤</div><div class="stat-copy"><span>RESEARCH SOURCES</span><strong id="dashboardSources">Books + web</strong><p>Books, trusted websites, and video</p></div><span class="stat-arrow">↗</span></article>
+          </section>
+
+          <section class="dashboard-columns">
+            <section class="setup card" id="createPanel" aria-labelledby="setupHeading">
+              <div class="section-heading">
+                <div class="section-title"><span class="step">01</span><div><span class="card-kicker">LESSON DESIGN</span><h2 id="setupHeading">Start with the outcome</h2><p class="section-subtitle">A clear goal makes a better lesson.</p></div></div>
+                <button class="text-button sample-link" id="sampleButton" type="button"><span class="sample-sparkle">✳</span> Try a sample</button>
+              </div>
+              <label for="titleInput">Lesson title</label>
+              <input id="titleInput" maxlength="160" placeholder="e.g. HTTP Requests and Responses">
+              <label for="objectiveInput">Learning objective <span>What should learners be able to do?</span></label>
+              <textarea id="objectiveInput" rows="2" maxlength="500" placeholder="e.g. Explain GET and POST methods and distinguish between 2xx, 4xx, and 5xx response status categories."></textarea>
+              <p class="field-hint">Tip: start with an action verb like <strong>explain</strong>, <strong>compare</strong>, or <strong>apply</strong>.</p>
+              <div class="actions">
+                <button class="button button-secondary" id="researchButton" type="button"><span aria-hidden="true">⌕</span> Find research</button>
+                <button class="button button-primary" id="generateButton" type="button">Create my lesson <span aria-hidden="true">↗</span></button>
+                <span class="error" id="errorMessage" role="alert"></span>
+              </div>
+              <div class="research-panel hidden" id="researchPanel">
+                <div class="research-title"><div><span class="research-overline">YOUR SOURCE LIBRARY</span><h3>Research library</h3></div><span id="sourceCount"></span></div>
+                <p>Source links are research starting points. Check original sources before teaching.</p>
+                <div class="research-warning hidden" id="researchWarning" role="status"></div>
+                <ul id="sourceList"></ul>
+              </div>
+            </section>
+
+            <aside class="dashboard-side">
+              <section class="journey-card">
+                <div class="journey-heading"><div><span class="card-kicker">YOUR CREATION FLOW</span><h2>From idea to impact</h2></div><span class="journey-spark">✦</span></div>
+                <ol class="journey-list">
+                  <li class="journey-current"><span class="journey-number">01</span><span><strong>Set the learning goal</strong><small>Start with what learners need</small></span><span class="journey-check">●</span></li>
+                  <li><span class="journey-number">02</span><span><strong>Research &amp; generate</strong><small>Build a lesson from trusted sources</small></span><span class="journey-check">○</span></li>
+                  <li><span class="journey-number">03</span><span><strong>Review &amp; export</strong><small>Refine and share your final lesson</small></span><span class="journey-check">○</span></li>
+                </ol>
+                <div class="journey-footer"><span>Built for instructors</span><span>45 min <b>·</b> 2 QC layers</span></div>
+              </section>
+              <section class="saved-lessons-card">
+                <div class="saved-lessons-heading"><div><span class="card-kicker">YOUR LIBRARY</span><h2>Saved lessons</h2></div><span class="saved-lessons-count" id="savedLessonsCount">0</span></div>
+                <ul id="savedLessonsList" class="saved-lessons-list"></ul>
+              </section>
+              <section class="tip-card"><span class="tip-mark">“</span><div><span class="card-kicker">A GOOD OBJECTIVE</span><p>Focus on what learners will <em>do</em>, not just what they will know.</p></div></section>
+            </aside>
+          </section>
+
+          <section class="workspace hidden" id="workspace">
+            <div class="section-heading workspace-heading">
+              <div class="section-title"><span class="step">02</span><div><span class="card-kicker">LESSON REVIEW</span><h2>Review and refine</h2></div></div>
+              <div class="actions compact">
+                <button class="button button-secondary" id="qcButton" type="button">Run both QC checks</button>
+                <button class="button button-secondary" id="retryButton" type="button">↻ Retry generation</button>
+                <button class="button button-primary" id="exportButton" type="button">Export lesson ↓</button>
+              </div>
+            </div>
+            <div class="editor-grid">
+              <section class="card editor-card">
+                <div class="card-heading"><div><p class="eyebrow">LESSON DRAFT</p><h3>Edit your lesson</h3></div><span class="editable-tag">Editable</span></div>
+                <textarea id="lessonEditor" aria-label="Editable lesson content" spellcheck="true"></textarea>
+                <div class="editor-footer"><span id="wordCount">0 words</span><button class="text-button" id="previewButton" type="button">Preview lesson ↗</button></div>
+              </section>
+              <aside class="qc-column">
+                <section class="card qc-card">
+                  <div class="card-heading"><div><p class="eyebrow">QC LAYER 01</p><h3>Research &amp; accuracy</h3></div><span class="qc-icon">01</span></div>
+                  <p class="qc-description">Evidence, source quality, and factual consistency.</p>
+                  <div id="researchQc"></div>
+                </section>
+                <section class="card qc-card">
+                  <div class="card-heading"><div><p class="eyebrow">QC LAYER 02</p><h3>Instructional quality</h3></div><span class="qc-icon">02</span></div>
+                  <p class="qc-description">Objective alignment, clarity, and learning activities.</p>
+                  <div id="instructionQc"></div>
+                </section>
+              </aside>
+            </div>
+            <section class="card review-references" aria-labelledby="reviewReferencesHeading">
+              <div class="card-heading">
+                <div><p class="eyebrow">SOURCE LIBRARY</p><h3 id="reviewReferencesHeading">Website and research links</h3></div>
+                <span class="reference-count" id="reviewSourceCount">0 links</span>
+              </div>
+              <p class="reference-intro">Open and verify your sources while reviewing the lesson. Links open in a new tab.</p>
+              <ul class="review-source-list" id="reviewSourceList"></ul>
+            </section>
+            <section class="preview card hidden" id="preview">
+              <div class="card-heading"><div><p class="eyebrow">LEARNER VIEW</p><h3>Lesson preview</h3></div><button class="text-button" id="closePreview" type="button">Close</button></div>
+              <article id="previewContent" class="rendered"></article>
+            </section>
+          </section>
+          <footer>Generated lessons need instructor review. Verify factual claims against cited primary sources.</footer>
+        </main>
+      </div>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>
