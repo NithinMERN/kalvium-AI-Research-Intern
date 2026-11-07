@@ -130,7 +130,63 @@ class LessonWorkflowTests(unittest.TestCase):
         self.assertEqual(len(result["images"]), 1)
         self.assertEqual(result["images"][0]["alt"], "A Java class diagram.")
         self.assertEqual(result["images"][0]["artist"], "Example author")
+        self.assertEqual(result["videos"], [])
+        self.assertIsNotNone(result["video_search"])
         self.assertFalse(any("No licensed image results" in error for error in result["research_errors"]))
+        lesson = make_lesson("OOP in Java", "Explain classes and objects.", result)
+        self.assertIn("Search YouTube for OOP in Java", lesson)
+        self.assertIn("video viewing is outside the 45-minute lesson plan", lesson)
+
+    def test_research_returns_relevant_licensed_videos_and_lesson_links(self):
+        video_page = {
+            "index": 1,
+            "title": "File:Seeing Photosynthesis from Space.webm",
+            "imageinfo": [
+                {
+                    "mime": "video/webm",
+                    "url": "https://upload.wikimedia.org/photosynthesis.webm",
+                    "thumburl": "https://upload.wikimedia.org/photosynthesis.jpg",
+                    "descriptionurl": "https://commons.wikimedia.org/wiki/File:Seeing_Photosynthesis_from_Space.webm",
+                    "extmetadata": {
+                        "ImageDescription": {"value": "<p>Photosynthesis observed from space.</p>"},
+                        "LicenseShortName": {"value": "Public domain"},
+                        "Artist": {"value": "NASA"},
+                    },
+                }
+            ],
+        }
+
+        def fake_read_json(url, headers=None):
+            if "commons.wikimedia.org" in url:
+                if "video" in url.lower():
+                    return {"query": {"pages": {"1": video_page}}}
+                return {"query": {"pages": {}}}
+            if "wikipedia.org" in url:
+                return {"query": {"search": []}}
+            if "googleapis.com" in url:
+                return {"items": []}
+            self.fail(f"Unexpected research URL: {url}")
+
+        with patch("server._read_json", side_effect=fake_read_json), patch.dict(
+            "os.environ", {"YOUTUBE_API_KEY": ""}
+        ):
+            result = research("Photosynthesis", "Explain how plants use light.")
+
+        self.assertEqual(len(result["videos"]), 1)
+        video = result["videos"][0]
+        self.assertEqual(video["mime"], "video/webm")
+        self.assertEqual(video["license"], "Public domain")
+        self.assertEqual(video["artist"], "NASA")
+        self.assertIsNone(result["video_search"])
+        lesson = make_lesson(
+            "Photosynthesis",
+            "Explain how plants use light.",
+            result,
+        )
+        self.assertIn("## Video resources", lesson)
+        self.assertIn("video viewing is outside the 45-minute lesson plan", lesson)
+        self.assertIn("**[▶ Seeing Photosynthesis from Space]", lesson)
+        self.assertIn("https://commons.wikimedia.org/wiki/File:Seeing_Photosynthesis_from_Space.webm", lesson)
 
 
 class LessonApiTests(unittest.TestCase):
@@ -155,6 +211,7 @@ class LessonApiTests(unittest.TestCase):
             self.assertIn(b"dashboard-illustration.svg", page)
             self.assertIn(b"reviewSourceList", page)
             self.assertIn(b"lessonPhotoList", page)
+            self.assertIn(b"lessonVideoList", page)
             self.assertIn(b"Website and research links", page)
 
         with urllib.request.urlopen(self.base_url + "/dashboard-illustration.svg") as response:

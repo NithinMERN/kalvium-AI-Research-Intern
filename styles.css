@@ -293,6 +293,20 @@ input:focus, textarea:focus { border-color: #9c91e7; box-shadow: 0 0 0 3px #7464
 .lesson-photo-link strong { padding: 9px 10px 0; color: #514f69; font-size: 11px; line-height: 1.45; }
 .lesson-photo-link small { padding: 5px 10px 10px; color: #908da3; font-size: 9px; }
 .lesson-photo-link:hover strong { color: #665ab6; text-decoration: underline; }
+.lesson-videos { margin-top: 13px; padding: 18px; }
+.lesson-videos .card-heading { align-items: center; margin-bottom: 5px; }
+.lesson-videos .eyebrow { margin-bottom: 4px; }
+.lesson-video-list, .preview-video-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 14px 0 0; padding: 0; list-style: none; }
+.lesson-video-card { overflow: hidden; border: 1px solid #eeedf3; border-radius: 9px; background: #fdfdff; }
+.lesson-video-player { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #22213a; object-fit: contain; }
+.lesson-video-details { display: grid; gap: 5px; padding: 10px 11px; }
+.lesson-video-details strong { color: #514f69; font-size: 12px; line-height: 1.45; }
+.lesson-video-details a { color: #665ab6; font-size: 10px; font-weight: 650; line-height: 1.5; text-decoration: none; }
+.lesson-video-details a:hover, .video-search-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.video-search-link { display: inline-block; margin-top: 12px; color: #665ab6; font-size: 12px; font-weight: 700; text-decoration: none; }
+.preview-video-resources h2 { margin-top: 23px; padding-top: 12px; border-top: 1px solid #eeedf3; font: 500 19px Georgia, serif; }
+.preview-video-list figure { overflow: hidden; margin: 0; border: 1px solid #eeedf3; border-radius: 9px; background: #fdfdff; }
+.preview-video-list figcaption { padding: 9px 11px; color: #77748a; font-size: 10px; line-height: 1.5; }
 .lesson-inline-photo { display: block; width: min(100%, 680px); max-height: 390px; margin: 15px auto 7px; border: 1px solid #e8e5f1; border-radius: 10px; background: #f3f1fa; object-fit: cover; }
 .rendered p:has(.lesson-inline-photo) { margin-top: 12px; }
 .rendered em { color: #77748a; font-size: .9em; }
@@ -375,6 +389,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #978be9; outline-offs
   .research-panel ul { grid-template-columns: 1fr; }
   .review-source-list { grid-template-columns: 1fr; }
   .lesson-photo-list { grid-template-columns: 1fr; }
+  .lesson-video-list, .preview-video-list { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -447,6 +462,8 @@ input { min-height: 45px; }
 .review-source-list a { font-size: 13px; }
 .lesson-photo-link strong { font-size: 13px; }
 .lesson-photo-link small { font-size: 11px; }
+.lesson-video-details strong { font-size: 13px; }
+.lesson-video-details a, .video-search-link { font-size: 11px; }
 footer { font-size: 11px; }
 
 @media (max-width: 1120px) {
@@ -486,6 +503,7 @@ footer { font-size: 11px; }
   .card-heading h3 { font-size: 15px; }
   .editor-card textarea { font-size: 12px; }
   .rendered { font-size: 13px; }
+  .preview-video-resources h2 { font-size: 17px; }
   .review-references .card-heading h3 { font-size: 16px; }
   .reference-intro { font-size: 12px; }
   .review-source-list a { font-size: 12px; }

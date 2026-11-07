@@ -46,6 +46,13 @@ def research(title, objective):
     notes = []
     errors = []
     images = []
+    videos = []
+    video_search = None
+    topic_terms = {
+        word for word in _words(title) if len(word) > 3 and word not in {
+            "about", "after", "before", "from", "into", "lesson", "through", "with"
+        }
+    }
     try:
         results = _read_json(wiki_url)["query"]["search"]
         if not results:
@@ -123,6 +130,77 @@ def research(title, objective):
             )
     except (OSError, ValueError, KeyError, urllib.error.URLError) as exc:
         errors.append(f"Image search unavailable; the lesson can still be generated: {exc}")
+
+    video_url = "https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode(
+        {
+            "action": "query",
+            "generator": "search",
+            "gsrsearch": f"{title} video",
+            "gsrnamespace": 6,
+            "gsrlimit": 8,
+            "prop": "imageinfo",
+            "iiprop": "url|extmetadata|mime",
+            "iiurlwidth": 700,
+            "format": "json",
+        }
+    )
+    try:
+        pages = _read_json(
+            video_url,
+            headers={"User-Agent": "LessonResearchTool/1.0 (educational use)"},
+        ).get("query", {}).get("pages", {})
+        for page in sorted(pages.values(), key=lambda item: item.get("index", 999)):
+            image_info = (page.get("imageinfo") or [{}])[0]
+            metadata = image_info.get("extmetadata", {})
+            video_mime = image_info.get("mime", "")
+            media_url = image_info.get("url")
+            file_page = image_info.get("descriptionurl")
+            license_name = _plain_text(
+                metadata.get("LicenseShortName", {}).get("value", "")
+            )
+            if (
+                not video_mime.startswith("video/")
+                or not media_url
+                or not media_url.startswith("https://upload.wikimedia.org/")
+                or not file_page
+                or not file_page.startswith("https://commons.wikimedia.org/")
+                or not license_name
+            ):
+                continue
+            video_title = page.get("title", "Educational video")
+            if video_title.startswith("File:"):
+                video_title = video_title[5:]
+            video_title = re.sub(r"\.[a-zA-Z0-9]{2,5}$", "", video_title)
+            description = _plain_text(
+                metadata.get("ImageDescription", {}).get("value", "")
+            )
+            if topic_terms and not topic_terms.intersection(
+                _words(video_title + " " + description)
+            ):
+                continue
+            video = {
+                "title": video_title,
+                "url": media_url,
+                "page_url": file_page,
+                "mime": video_mime,
+                "thumbnail": image_info.get("thumburl", ""),
+                "license": license_name,
+                "artist": _plain_text(metadata.get("Artist", {}).get("value", "")),
+                "alt": description[:400],
+                "provider": "Wikimedia Commons",
+            }
+            videos.append(video)
+            sources.append(
+                {
+                    "kind": "Video",
+                    "title": video_title,
+                    "url": file_page,
+                }
+            )
+            if len(videos) == 3:
+                break
+    except (OSError, ValueError, KeyError, urllib.error.URLError) as exc:
+        errors.append(f"Open video search unavailable: {exc}")
 
     encoded = urllib.parse.quote_plus(query)
     sources.append(
@@ -208,18 +286,42 @@ def research(title, objective):
             }
         )
         try:
-            videos = _read_json(youtube_url).get("items", [])
-            for video in videos:
+            youtube_results = _read_json(youtube_url).get("items", [])
+            for video in youtube_results:
                 snippet = video.get("snippet", {})
                 video_id = video.get("id", {}).get("videoId")
                 if not video_id:
                     continue
                 video_title = snippet.get("title", "Untitled video")
+                thumbnails = snippet.get("thumbnails", {})
+                thumbnail = (
+                    thumbnails.get("high")
+                    or thumbnails.get("medium")
+                    or thumbnails.get("default")
+                    or {}
+                )
+                if topic_terms and not topic_terms.intersection(
+                    _words(video_title + " " + snippet.get("description", ""))
+                ):
+                    continue
                 sources.append(
                     {
                         "kind": "YouTube video",
                         "title": f"{video_title} — {snippet.get('channelTitle', 'YouTube')}",
                         "url": f"https://www.youtube.com/watch?v={urllib.parse.quote(video_id)}",
+                    }
+                )
+                videos.append(
+                    {
+                        "title": video_title,
+                        "url": f"https://www.youtube-nocookie.com/embed/{urllib.parse.quote(video_id)}",
+                        "page_url": f"https://www.youtube.com/watch?v={urllib.parse.quote(video_id)}",
+                        "mime": "video/youtube",
+                        "thumbnail": thumbnail.get("url", ""),
+                        "license": "YouTube",
+                        "artist": snippet.get("channelTitle", ""),
+                        "alt": video_title,
+                        "provider": "YouTube",
                     }
                 )
                 notes.append(
@@ -229,15 +331,21 @@ def research(title, objective):
         except (OSError, ValueError, KeyError, urllib.error.URLError) as exc:
             errors.append(f"YouTube video search unavailable: {exc}")
     else:
-        errors.append(
-            "YouTube API key not configured; only relevant video search results are linked."
-        )
+        errors.append("YouTube API key not configured; searching for openly licensed videos instead.")
         sources.append(
             {
                 "kind": "YouTube search",
                 "title": f"Video lessons about {title} — choose and review a specific video",
                 "url": f"https://www.youtube.com/results?search_query={encoded}",
             }
+        )
+    if not videos:
+        video_search = {
+            "title": f"Video lessons about {title}",
+            "url": f"https://www.youtube.com/results?search_query={encoded}",
+        }
+        errors.append(
+            "No embeddable video was found; a topic-specific YouTube search link is available."
         )
     if _words(query) & {"http", "request", "response", "status", "web"}:
         sources.extend(
@@ -279,6 +387,8 @@ def research(title, objective):
         "research_notes": notes,
         "research_errors": errors,
         "images": images,
+        "videos": videos,
+        "video_search": video_search,
         "query": query,
     }
 
@@ -426,6 +536,26 @@ Search links are starting points: verify a specific book, web page, or video bef
             for image in images
         )
         content += "\n\n"
+    videos = research_result.get("videos", [])
+    video_search = research_result.get("video_search")
+    if videos or video_search:
+        content += "\n## Video resources\n\n"
+        content += "*Supplementary and optional; video viewing is outside the 45-minute lesson plan.*\n\n"
+        for video in videos:
+            credit = " · ".join(
+                item for item in (video.get("license"), video.get("artist")) if item
+            )
+            content += (
+                f"- **[▶ {video['title']}]({video['page_url']})**"
+                + (f" — {credit}" if credit else "")
+                + "\n"
+            )
+        if video_search:
+            content += (
+                f"- [Search YouTube for {title}]({video_search['url']}) "
+                "(search results; select and review a specific video before assigning.)\n"
+            )
+        content += "\n"
     content += "\n" + "\n".join(
         f"- **[{item['kind']}: {item['title']}]({item['url']})**"
         for item in references
@@ -496,6 +626,12 @@ def generate_with_model(title, objective, research_result):
     if not isinstance(content, str) or not content.strip():
         raise ValueError("The configured AI provider returned an empty lesson.")
     content = add_photo_resources(content.strip(), research_result.get("images", []))
+    content = add_video_resources(
+        content,
+        research_result.get("videos", []),
+        research_result.get("video_search"),
+        title,
+    )
     return bold_reference_links(content.strip()), os.environ.get(
         "OPENAI_MODEL", "gpt-4o-mini"
     )
@@ -517,6 +653,32 @@ def add_photo_resources(content, images):
     if references:
         return content[:references.start()].rstrip() + "\n\n" + section + "\n\n" + content[references.start():]
     return content.rstrip() + "\n\n" + section
+
+
+def add_video_resources(content, videos, video_search, title):
+    if not videos and not video_search:
+        return content
+    if re.search(r"^#{1,3}\s+video resources\b", content, re.IGNORECASE | re.MULTILINE):
+        return content
+    section = (
+        "## Video resources\n\n"
+        "*Supplementary and optional; video viewing is outside the 45-minute lesson plan.*\n\n"
+    )
+    for video in videos:
+        credit = " · ".join(
+            item for item in (video.get("license"), video.get("artist")) if item
+        )
+        section += (
+            f"- **[▶ {video['title']}]({video['page_url']})**"
+            + (f" — {credit}" if credit else "")
+            + "\n"
+        )
+    if video_search:
+        section += (
+            f"- [Search YouTube for {title}]({video_search['url']}) "
+            "(search results; select and review a specific video before assigning.)\n"
+        )
+    return content.rstrip() + "\n\n" + section.rstrip()
 
 
 def qc_research(content, sources, research_notes=None):
@@ -677,6 +839,8 @@ class Handler(BaseHTTPRequestHandler):
                         "qc_instruction": qc_instruction(content, title, objective),
                         "sources": research_result["sources"],
                         "images": research_result.get("images", []),
+                        "videos": research_result.get("videos", []),
+                        "video_search": research_result.get("video_search"),
                         "mode": mode,
                     }
                 )

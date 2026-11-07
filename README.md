@@ -1,6 +1,6 @@
 # Lesson Studio
 
-A small, local lesson-research dashboard with a responsive layout, more readable type, and a locally served 3D-style SVG hero illustration. It accepts a lesson title and learning objective, discovers web references and research links for books and videos, adds licensed Wikimedia Commons photos with attribution to the lesson, runs two separate heuristic QC checks, and supports editing, browser-local saving, preview, applying recommendations, and Markdown export with both QC reports. Run QC again after edits; export reruns both checks so its reports match the final draft.
+A small, local lesson-research dashboard with a responsive layout, more readable type, and a locally served 3D-style SVG hero illustration. It accepts a lesson title and learning objective, discovers web references and research links for books and videos, adds licensed Wikimedia Commons photos and playable videos with attribution to the lesson, runs two separate heuristic QC checks, and supports editing, browser-local saving, preview, applying recommendations, and Markdown export with both QC reports. Run QC again after edits; export reruns both checks so its reports match the final draft.
 
 ## Project files
 
@@ -11,7 +11,7 @@ A small, local lesson-research dashboard with a responsive layout, more readable
 
 ## Run locally
 
-Requires Python 3.9+; no packages are required. The local generator works without API keys. To use OpenAI for lesson drafting, set `OPENAI_API_KEY` before starting the server; optionally set `OPENAI_MODEL` (defaults to `gpt-4o-mini`). Hosted generation sends the lesson prompt and retrieved research notes to that provider. Set `YOUTUBE_API_KEY` to retrieve specific video results and descriptions; without it, the app provides a topic-specific YouTube search link and clearly flags that no video was reviewed.
+Requires Python 3.9+; no packages are required. The local generator works without API keys. To use OpenAI for lesson drafting, set `OPENAI_API_KEY` before starting the server; optionally set `OPENAI_MODEL` (defaults to `gpt-4o-mini`). Hosted generation sends the lesson prompt and retrieved research notes to that provider. Set `YOUTUBE_API_KEY` to retrieve specific video results and descriptions; without it, the app searches Wikimedia Commons for topic-matched, openly licensed videos, and falls back to a clearly labeled YouTube topic search if none are found.
 
 ```powershell
 python server.py
@@ -22,7 +22,7 @@ Open [http://localhost:8000](http://localhost:8000). Use **Try a sample** for th
 - Title: **Photosynthesis: From Light to Chemical Energy**
 - Objective: **Describe how plants use light, water, and carbon dioxide to produce sugars and oxygen.**
 
-Research retrieval queries Wikipedia and the Google Books catalog (with an Open Library fallback) for relevant pages/snippets and titles. HTTP lessons include the HTTP Semantics specification and relevant MDN references. Internet access is needed for live search. Source discovery errors and unavailability of the optional YouTube API key are surfaced in the research panel; the rest of the workflow remains usable.
+Research retrieval queries Wikipedia and the Google Books catalog (with an Open Library fallback) for relevant pages/snippets and titles. Wikimedia Commons media results are filtered by topic, media type, and license, and video cards play the video inline when the browser supports its format. When no suitable Commons video is found, the lesson provides an explicit YouTube topic-search link instead of presenting unreviewed results as a specific recommendation. Optionally set `YOUTUBE_API_KEY` to retrieve relevant, playable YouTube videos; YouTube video playback may be subject to embedding restrictions. HTTP lessons include the HTTP Semantics specification and relevant MDN references. Internet access is needed for live search. Source discovery errors and unavailability of the optional YouTube API key are surfaced in the research panel; the rest of the workflow remains usable.
 
 ## Design and limitations
 

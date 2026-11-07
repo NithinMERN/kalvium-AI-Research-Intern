@@ -6,12 +6,122 @@ let qcReports = null;
 let currentDraftId = null;
 let drafts = [];
 
+function isSupportedVideo(video) {
+  if (video.provider === "YouTube") {
+    return /^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]+$/.test(video.url || "")
+      && /^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]+$/.test(video.page_url || "");
+  }
+  return video.provider === "Wikimedia Commons"
+    && /^https:\/\/upload\.wikimedia\.org\//.test(video.url || "")
+    && /^https:\/\/commons\.wikimedia\.org\//.test(video.page_url || "")
+    && /^video\/[a-z0-9.+-]+$/i.test(video.mime || "");
+}
+
 function showError(message) {
   $("errorMessage").textContent = message || "";
 }
 
+function renderVideos(videos, videoSearch) {
+  const list = $("lessonVideoList");
+  list.replaceChildren();
+  $("videoCount").textContent = `${videos.length} ${videos.length === 1 ? "video" : "videos"}`;
+  $("lessonVideos").classList.toggle("hidden", videos.length === 0 && !videoSearch);
+  for (const video of videos) {
+    if (!isSupportedVideo(video)) continue;
+    const item = document.createElement("li");
+    item.className = "lesson-video-card";
+    const player = document.createElement(video.provider === "YouTube" ? "iframe" : "video");
+    player.className = "lesson-video-player";
+    if (video.provider === "YouTube") {
+      player.src = video.url;
+      player.title = video.title;
+      player.loading = "lazy";
+      player.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      player.referrerPolicy = "strict-origin-when-cross-origin";
+      player.allowFullscreen = true;
+    } else {
+      player.controls = true;
+      player.preload = "metadata";
+      player.playsInline = true;
+      if (video.thumbnail) player.poster = video.thumbnail;
+      const source = document.createElement("source");
+      source.src = video.url;
+      source.type = video.mime;
+      player.append(source);
+      player.append("Your browser cannot play this video. ");
+      const fallback = document.createElement("a");
+      fallback.href = video.page_url;
+      fallback.target = "_blank";
+      fallback.rel = "noopener noreferrer";
+      fallback.textContent = "Open the video source.";
+      player.append(fallback);
+    }
+    const details = document.createElement("div");
+    details.className = "lesson-video-details";
+    const title = document.createElement("strong");
+    title.textContent = video.title;
+    const attributionLink = document.createElement("a");
+    attributionLink.href = video.page_url;
+    attributionLink.target = "_blank";
+    attributionLink.rel = "noopener noreferrer";
+    attributionLink.textContent = [video.provider, video.license, video.artist].filter(Boolean).join(" · ");
+    details.append(title, attributionLink);
+    item.append(player, details);
+    list.append(item);
+  }
+  const searchLink = $("videoSearchLink");
+  if (videoSearch?.url?.startsWith("https://www.youtube.com/results?search_query=")) {
+    searchLink.href = videoSearch.url;
+    searchLink.textContent = `Search YouTube for more videos about ${videoSearch.title.replace(/^Video lessons about /, "")} ↗`;
+    searchLink.classList.remove("hidden");
+  } else {
+    searchLink.classList.add("hidden");
+    searchLink.removeAttribute("href");
+  }
+}
+
 function getInputs() {
   return { title: $("titleInput").value.trim(), objective: $("objectiveInput").value.trim() };
+}
+
+function renderPreviewVideos(videos) {
+  const section = document.createElement("section");
+  section.className = "preview-video-resources";
+  if (!videos.length) return section;
+  const heading = document.createElement("h2");
+  heading.textContent = "Supplementary videos (optional)";
+  section.append(heading);
+  const list = document.createElement("div");
+  list.className = "preview-video-list";
+  for (const video of videos) {
+    if (!isSupportedVideo(video)) continue;
+    const item = document.createElement("figure");
+    const player = document.createElement(video.provider === "YouTube" ? "iframe" : "video");
+    player.className = "lesson-video-player";
+    if (video.provider === "YouTube") {
+      player.src = video.url;
+      player.title = video.title;
+      player.loading = "lazy";
+      player.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      player.referrerPolicy = "strict-origin-when-cross-origin";
+      player.allowFullscreen = true;
+    } else {
+      player.controls = true;
+      player.preload = "metadata";
+      player.playsInline = true;
+      if (video.thumbnail) player.poster = video.thumbnail;
+      const source = document.createElement("source");
+      source.src = video.url;
+      source.type = video.mime;
+      player.append(source);
+    }
+    const caption = document.createElement("figcaption");
+    caption.textContent = `${video.title} · ${video.provider}${video.license ? ` · ${video.license}` : ""}`;
+    item.append(player, caption);
+    list.append(item);
+  }
+  section.append(list);
+  return section;
 }
 
 async function post(path, body) {
@@ -42,6 +152,7 @@ function renderSources(sources) {
   $("researchWarning").classList.toggle("hidden", warnings.length === 0);
   $("researchPanel").classList.remove("hidden");
   renderPhotos(researchData?.images || []);
+  renderVideos(researchData?.videos || [], researchData?.video_search || null);
 }
 
 function renderPhotos(images) {
@@ -291,6 +402,7 @@ function applyDraft(state) {
     $("reviewSourceList").replaceChildren();
     $("dashboardSources").textContent = "Books + web";
     renderPhotos([]);
+    renderVideos([], null);
   }
   if (qcReports) {
     renderQc("researchQc", qcReports.research);
@@ -451,6 +563,7 @@ $("titleInput").addEventListener("input", handleInputsChanged);
 $("objectiveInput").addEventListener("input", handleInputsChanged);
 $("previewButton").addEventListener("click", () => {
   $("previewContent").innerHTML = renderMarkdown($("lessonEditor").value);
+  $("previewContent").append(renderPreviewVideos(researchData?.videos || []));
   $("preview").classList.remove("hidden");
   $("preview").scrollIntoView({ behavior: "smooth", block: "start" });
 });
