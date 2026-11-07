@@ -1,4 +1,5 @@
 import json
+import html
 import os
 import re
 import urllib.error
@@ -26,6 +27,10 @@ def _read_json(url, headers=None):
         return json.load(response)
 
 
+def _plain_text(value):
+    return html.unescape(re.sub(r"<[^>]+>", "", value or "")).strip()
+
+
 def research(title, objective):
     query = f"{title} {objective}"
     wiki_url = "https://en.wikipedia.org/w/api.php?" + urllib.parse.urlencode(
@@ -40,6 +45,7 @@ def research(title, objective):
     sources = []
     notes = []
     errors = []
+    images = []
     try:
         results = _read_json(wiki_url)["query"]["search"]
         if not results:
@@ -56,6 +62,67 @@ def research(title, objective):
             notes.append(f"{page_title}: {snippet}")
     except (OSError, ValueError, KeyError, urllib.error.URLError) as exc:
         errors.append(f"Website search unavailable: {exc}")
+
+    image_url = "https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode(
+        {
+            "action": "query",
+            "generator": "search",
+            "gsrsearch": title,
+            "gsrnamespace": 6,
+            "gsrlimit": 4,
+            "prop": "imageinfo",
+            "iiprop": "url|extmetadata|mime",
+            "iiurlwidth": 900,
+            "format": "json",
+        }
+    )
+    try:
+        pages = _read_json(
+            image_url,
+            headers={"User-Agent": "LessonResearchTool/1.0 (educational use)"},
+        ).get("query", {}).get("pages", {})
+        for page in sorted(pages.values(), key=lambda item: item.get("index", 999)):
+            image_info = (page.get("imageinfo") or [{}])[0]
+            metadata = image_info.get("extmetadata", {})
+            mime_type = image_info.get("mime", "")
+            thumbnail = image_info.get("thumburl")
+            file_page = image_info.get("descriptionurl")
+            license_name = _plain_text(
+                metadata.get("LicenseShortName", {}).get("value", "")
+            )
+            if (
+                not mime_type.startswith("image/")
+                or not thumbnail
+                or not file_page
+                or not license_name
+                or not thumbnail.startswith("https://")
+                or not file_page.startswith("https://commons.wikimedia.org/")
+            ):
+                continue
+            image_title = page.get("title", "Educational image")
+            if image_title.startswith("File:"):
+                image_title = image_title[5:]
+            image_title = re.sub(r"\.[a-zA-Z0-9]{2,5}$", "", image_title)
+            description = _plain_text(
+                metadata.get("ImageDescription", {}).get("value", "")
+            )
+            artist = _plain_text(metadata.get("Artist", {}).get("value", ""))
+            images.append(
+                {
+                    "title": image_title,
+                    "url": thumbnail,
+                    "page_url": file_page,
+                    "alt": (description or image_title)[:400],
+                    "license": license_name,
+                    "artist": artist,
+                }
+            )
+        if not images:
+            errors.append(
+                f"No licensed image results were found for: {title}. The lesson can still be generated."
+            )
+    except (OSError, ValueError, KeyError, urllib.error.URLError) as exc:
+        errors.append(f"Image search unavailable; the lesson can still be generated: {exc}")
 
     encoded = urllib.parse.quote_plus(query)
     sources.append(
@@ -211,6 +278,7 @@ def research(title, objective):
         "sources": sources,
         "research_notes": notes,
         "research_errors": errors,
+        "images": images,
         "query": query,
     }
 
@@ -345,6 +413,19 @@ Return to the learning objective. Ask learners to summarize one key idea and one
 Search links are starting points: verify a specific book, web page, or video before recommending it.
 """
     references = research_result.get("sources", [])
+    images = research_result.get("images", [])
+    if images:
+        content += "\n## Photo resources\n\n"
+        content += "\n\n".join(
+            f"![{image['alt']}]({image['url']})\n\n"
+            f"*{image['title']}. "
+            f"[Image and attribution]({image['page_url']}) · "
+            f"{image['license']}"
+            + (f" · {image['artist']}" if image.get("artist") else "")
+            + "*"
+            for image in images
+        )
+        content += "\n\n"
     content += "\n" + "\n".join(
         f"- **[{item['kind']}: {item['title']}]({item['url']})**"
         for item in references
@@ -414,9 +495,28 @@ def generate_with_model(title, objective, research_result):
     content = result["choices"][0]["message"]["content"]
     if not isinstance(content, str) or not content.strip():
         raise ValueError("The configured AI provider returned an empty lesson.")
+    content = add_photo_resources(content.strip(), research_result.get("images", []))
     return bold_reference_links(content.strip()), os.environ.get(
         "OPENAI_MODEL", "gpt-4o-mini"
     )
+
+
+def add_photo_resources(content, images):
+    if not images or re.search(r"^#{1,3}\s+photo resources\b", content, re.IGNORECASE | re.MULTILINE):
+        return content
+    section = "## Photo resources\n\n" + "\n\n".join(
+        f"![{image['alt']}]({image['url']})\n\n"
+        f"*{image['title']}. "
+        f"[Image and attribution]({image['page_url']}) · "
+        f"{image['license']}"
+        + (f" · {image['artist']}" if image.get("artist") else "")
+        + "*"
+        for image in images
+    )
+    references = re.search(r"^#{1,3}\s+(references|sources)\b", content, re.IGNORECASE | re.MULTILINE)
+    if references:
+        return content[:references.start()].rstrip() + "\n\n" + section + "\n\n" + content[references.start():]
+    return content.rstrip() + "\n\n" + section
 
 
 def qc_research(content, sources, research_notes=None):
@@ -576,6 +676,7 @@ class Handler(BaseHTTPRequestHandler):
                         ),
                         "qc_instruction": qc_instruction(content, title, objective),
                         "sources": research_result["sources"],
+                        "images": research_result.get("images", []),
                         "mode": mode,
                     }
                 )

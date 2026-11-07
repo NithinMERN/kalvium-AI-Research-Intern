@@ -41,6 +41,34 @@ function renderSources(sources) {
   $("researchWarning").textContent = warnings.join(" ");
   $("researchWarning").classList.toggle("hidden", warnings.length === 0);
   $("researchPanel").classList.remove("hidden");
+  renderPhotos(researchData?.images || []);
+}
+
+function renderPhotos(images) {
+  const list = $("lessonPhotoList");
+  list.replaceChildren();
+  $("photoCount").textContent = `${images.length} ${images.length === 1 ? "photo" : "photos"}`;
+  $("lessonPhotos").classList.toggle("hidden", images.length === 0);
+  for (const image of images) {
+    const item = document.createElement("li");
+    item.className = "lesson-photo-card";
+    const link = document.createElement("a");
+    link.href = image.page_url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "lesson-photo-link";
+    const picture = document.createElement("img");
+    picture.src = image.url;
+    picture.alt = image.alt || image.title;
+    picture.loading = "lazy";
+    const caption = document.createElement("strong");
+    caption.textContent = image.title;
+    const attribution = document.createElement("small");
+    attribution.textContent = [image.license, image.artist].filter(Boolean).join(" · ");
+    link.append(picture, caption, attribution);
+    item.append(link);
+    list.append(item);
+  }
 }
 
 function populateSourceList(listId, sources) {
@@ -262,6 +290,7 @@ function applyDraft(state) {
     $("sourceList").replaceChildren();
     $("reviewSourceList").replaceChildren();
     $("dashboardSources").textContent = "Books + web";
+    renderPhotos([]);
   }
   if (qcReports) {
     renderQc("researchQc", qcReports.research);
@@ -390,7 +419,9 @@ function formatInline(text) {
   return text
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    .replace(/!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g, '<img class="lesson-inline-photo" src="$2" alt="$1" loading="lazy">')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
 }
 
 $("researchButton").addEventListener("click", findResearch);

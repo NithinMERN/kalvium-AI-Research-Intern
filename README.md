@@ -1,6 +1,6 @@
 # Lesson Studio
 
-A small, local lesson-research dashboard with a responsive layout, more readable type, and a locally served 3D-style SVG hero illustration. It accepts a lesson title and learning objective, discovers web references and research links for books and videos, drafts a timed lesson, runs two separate heuristic QC checks, and supports editing, browser-local saving, preview, applying recommendations, and Markdown export with both QC reports. Run QC again after edits; export reruns both checks so its reports match the final draft.
+A small, local lesson-research dashboard with a responsive layout, more readable type, and a locally served 3D-style SVG hero illustration. It accepts a lesson title and learning objective, discovers web references and research links for books and videos, adds licensed Wikimedia Commons photos with attribution to the lesson, runs two separate heuristic QC checks, and supports editing, browser-local saving, preview, applying recommendations, and Markdown export with both QC reports. Run QC again after edits; export reruns both checks so its reports match the final draft.
 
 ## Project files
 

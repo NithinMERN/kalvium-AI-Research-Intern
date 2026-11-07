@@ -283,6 +283,19 @@ input:focus, textarea:focus { border-color: #9c91e7; box-shadow: 0 0 0 3px #7464
 .review-source-list li { min-width: 0; padding: 10px 11px; border: 1px solid #eeedf3; border-radius: 7px; background: #fdfdff; }
 .review-source-list a { display: block; overflow-wrap: anywhere; color: #665ab6; font-size: 12px; font-weight: 700; line-height: 1.55; text-decoration: none; }
 .review-source-list a:hover { color: #5143ac; text-decoration: underline; text-underline-offset: 3px; }
+.lesson-photos { margin-top: 13px; padding: 18px; }
+.lesson-photos .card-heading { align-items: center; margin-bottom: 5px; }
+.lesson-photos .eyebrow { margin-bottom: 4px; }
+.lesson-photo-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 14px 0 0; padding: 0; list-style: none; }
+.lesson-photo-card { overflow: hidden; border: 1px solid #eeedf3; border-radius: 9px; background: #fdfdff; }
+.lesson-photo-link { display: flex; height: 100%; flex-direction: column; color: #514f69; text-decoration: none; }
+.lesson-photo-link img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: #f0eef8; }
+.lesson-photo-link strong { padding: 9px 10px 0; color: #514f69; font-size: 11px; line-height: 1.45; }
+.lesson-photo-link small { padding: 5px 10px 10px; color: #908da3; font-size: 9px; }
+.lesson-photo-link:hover strong { color: #665ab6; text-decoration: underline; }
+.lesson-inline-photo { display: block; width: min(100%, 680px); max-height: 390px; margin: 15px auto 7px; border: 1px solid #e8e5f1; border-radius: 10px; background: #f3f1fa; object-fit: cover; }
+.rendered p:has(.lesson-inline-photo) { margin-top: 12px; }
+.rendered em { color: #77748a; font-size: .9em; }
 footer { margin-top: 23px; padding: 14px 0 10px; border-top: 1px solid #e9e8f0; color: #9a99a8; font-size: 9px; text-align: center; }
 .hidden { display: none !important; }
 button:focus-visible, a:focus-visible { outline: 3px solid #978be9; outline-offset: 3px; }
@@ -361,6 +374,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #978be9; outline-offs
   .editor-card textarea { min-height: 390px; }
   .research-panel ul { grid-template-columns: 1fr; }
   .review-source-list { grid-template-columns: 1fr; }
+  .lesson-photo-list { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -431,6 +445,8 @@ input { min-height: 45px; }
 .review-references .card-heading h3 { font-size: 18px; }
 .reference-intro { font-size: 13px; }
 .review-source-list a { font-size: 13px; }
+.lesson-photo-link strong { font-size: 13px; }
+.lesson-photo-link small { font-size: 11px; }
 footer { font-size: 11px; }
 
 @media (max-width: 1120px) {

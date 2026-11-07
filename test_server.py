@@ -5,8 +5,9 @@ import urllib.error
 import urllib.request
 from threading import Thread
 from http.server import ThreadingHTTPServer
+from unittest.mock import patch
 
-from server import Handler, make_lesson, qc_instruction, qc_research
+from server import Handler, make_lesson, qc_instruction, qc_research, research
 
 
 class LessonWorkflowTests(unittest.TestCase):
@@ -47,9 +48,26 @@ class LessonWorkflowTests(unittest.TestCase):
             {"kind": "Reference", "title": "Calvin cycle overview", "url": "https://en.wikipedia.org/wiki/Calvin_cycle"},
             *self.sources[2:],
         ]
-        result = make_lesson(title, objective, {"sources": sources, "research_notes": []})
+        images = [
+            {
+                "title": "Photosynthesis in a leaf",
+                "url": "https://upload.wikimedia.org/example.jpg",
+                "page_url": "https://commons.wikimedia.org/wiki/File:Example.jpg",
+                "alt": "A labeled diagram of photosynthesis.",
+                "license": "CC BY-SA 4.0",
+                "artist": "Example artist",
+            }
+        ]
+        result = make_lesson(
+            title,
+            objective,
+            {"sources": sources, "research_notes": [], "images": images},
+        )
         self.assertIn("Practice (10 min)", result)
         self.assertIn("References and supplementary learning", result)
+        self.assertIn("## Photo resources", result)
+        self.assertIn("![A labeled diagram of photosynthesis.](https://upload.wikimedia.org/example.jpg)", result)
+        self.assertIn("CC BY-SA 4.0", result)
         for factual_detail in ("Calvin cycle", "G3P", "Water is split", "oxygen", "ATP and NADPH", "OpenStax Biology 2e"):
             self.assertIn(factual_detail, result)
         self.assertEqual(qc_research(result, self.sources)["layer"], "Research and factual accuracy")
@@ -77,6 +95,43 @@ class LessonWorkflowTests(unittest.TestCase):
         self.assertEqual(report["status"], "Review recommended")
         self.assertTrue(report["issues"])
 
+    def test_research_returns_licensed_photos_and_surfaces_search_failures(self):
+        image_page = {
+            "index": 1,
+            "title": "File:Java class diagram.jpg",
+            "imageinfo": [
+                {
+                    "mime": "image/jpeg",
+                    "thumburl": "https://upload.wikimedia.org/java.jpg",
+                    "descriptionurl": "https://commons.wikimedia.org/wiki/File:Java_class_diagram.jpg",
+                    "extmetadata": {
+                        "ImageDescription": {"value": "<p>A Java class diagram.</p>"},
+                        "LicenseShortName": {"value": "CC BY 4.0"},
+                        "Artist": {"value": "<a href='https://example.test'>Example author</a>"},
+                    },
+                }
+            ],
+        }
+
+        def fake_read_json(url, headers=None):
+            if "commons.wikimedia.org" in url:
+                return {"query": {"pages": {"1": image_page}}}
+            if "wikipedia.org" in url:
+                return {"query": {"search": []}}
+            if "googleapis.com" in url:
+                return {"items": []}
+            self.fail(f"Unexpected research URL: {url}")
+
+        with patch("server._read_json", side_effect=fake_read_json), patch.dict(
+            "os.environ", {"YOUTUBE_API_KEY": ""}
+        ):
+            result = research("OOP in Java", "Explain classes and objects to beginners")
+
+        self.assertEqual(len(result["images"]), 1)
+        self.assertEqual(result["images"][0]["alt"], "A Java class diagram.")
+        self.assertEqual(result["images"][0]["artist"], "Example author")
+        self.assertFalse(any("No licensed image results" in error for error in result["research_errors"]))
+
 
 class LessonApiTests(unittest.TestCase):
     @classmethod
@@ -99,6 +154,7 @@ class LessonApiTests(unittest.TestCase):
             self.assertIn(b"Lesson Studio", page)
             self.assertIn(b"dashboard-illustration.svg", page)
             self.assertIn(b"reviewSourceList", page)
+            self.assertIn(b"lessonPhotoList", page)
             self.assertIn(b"Website and research links", page)
 
         with urllib.request.urlopen(self.base_url + "/dashboard-illustration.svg") as response:
